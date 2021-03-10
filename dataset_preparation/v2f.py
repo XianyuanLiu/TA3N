@@ -23,10 +23,10 @@ init(autoreset=True)
 
 ###### Flags ######
 parser = argparse.ArgumentParser(description='Dataset Preparation')
-parser.add_argument('--data_path', type=str, required=False, default='I:/Datasets/EgoAction/emp/', help='source path')
-parser.add_argument('--data_outpath', type=str, required=False, default='I:/Datasets/EgoAction/emp/', help='target path')
-parser.add_argument('--video_in', type=str, required=False, default='RGB', help='name of input video dataset')
-parser.add_argument('--feature_in', type=str, required=False, default='RGB-feature',
+parser.add_argument('--data_path', type=str, required=False, default='I:/Datasets/EgoAction/ADL/frames_rgb_flow/', help='source path')
+parser.add_argument('--data_outpath', type=str, required=False, default='I:/Datasets/EgoAction/ADL/frames_rgb_flow/', help='target path')
+parser.add_argument('--video_in', type=str, required=False, default='rgb', help='name of input video dataset')
+parser.add_argument('--feature_in', type=str, required=False, default='rgb-feature',
                     help='name of output frame dataset')
 parser.add_argument('--input_type', type=str, default='frames', choices=['video', 'frames'],
                     help='input types for videos')
@@ -36,10 +36,10 @@ parser.add_argument('--base_model', type=str, required=False, default='resnet101
                     choices=['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152', 'c3d'])
 parser.add_argument('--pretrain_weight', type=str, required=False, default='', help='model weight file path')
 parser.add_argument('--num_thread', type=int, required=False, default=-1, help='number of threads for multiprocessing')
-parser.add_argument('--batch_size', type=int, required=False, default=16, help='batch size')
+parser.add_argument('--batch_size', type=int, required=False, default=8, help='batch size')
 parser.add_argument('--start_class', type=int, required=False, default=0, help='the starting class id (start from 1)')
 parser.add_argument('--end_class', type=int, required=False, default=-1, help='the end class id')
-parser.add_argument('--class_file', type=str, default='class.txt', help='process the classes only in the class_file')
+parser.add_argument('--class_file', type=str, default='none', help='process the classes only in the class_file')
 
 args = parser.parse_args()
 
@@ -55,7 +55,7 @@ feature_in_type = '.t7'
 
 # --- create dataset folders
 # root folder
-path_output = args.data_outpath + args.feature_in + '_' + args.base_model + '/'
+path_output = args.data_path + args.feature_in + '_' + args.base_model + '/'
 if args.structure != 'tsn':
     path_output = args.data_path + args.feature_in + '-' + args.structure + '/'
 if not os.path.isdir(path_output):
@@ -241,25 +241,30 @@ id_class_start = args.start_class - 1
 id_class_end = len(list_class) if args.end_class <= 0 else args.end_class
 start = time.time()
 
-for i in range(id_class_start, id_class_end):
-    start_class = time.time()
-    class_name = list_class[i]
-    if class_name in class_names_proc:
-        print(Fore.YELLOW + 'class ' + str(i + 1) + ': ' + class_name)
+list_video = os.listdir(path_input + '/')
+list_video.sort()
+class_name = ''
+pool.map(extract_features, list_video, chunksize=1)
 
-        if args.structure == 'imagenet':  # create the class folder if the data structure is ImageNet
-            if not os.path.isdir(path_output + class_name + '/'):
-                os.makedirs(path_output + class_name + '/')
-
-        list_video = os.listdir(path_input + class_name + '/')
-        list_video.sort()
-
-        pool.map(extract_features, list_video, chunksize=1)
-
-        end_class = time.time()
-        print('Elapsed time for ' + class_name + ': ' + str(end_class - start_class))
-    else:
-        print(Fore.RED + class_name + ' is not selected !!')
+# for i in range(id_class_start, id_class_end):
+#     start_class = time.time()
+#     class_name = list_class[i]
+#     if class_name in class_names_proc:
+#         print(Fore.YELLOW + 'class ' + str(i + 1) + ': ' + class_name)
+#
+#         if args.structure == 'imagenet':  # create the class folder if the data structure is ImageNet
+#             if not os.path.isdir(path_output + class_name + '/'):
+#                 os.makedirs(path_output + class_name + '/')
+#
+#         list_video = os.listdir(path_input + class_name + '/')
+#         list_video.sort()
+#
+#         pool.map(extract_features, list_video, chunksize=1)
+#
+#         end_class = time.time()
+#         print('Elapsed time for ' + class_name + ': ' + str(end_class - start_class))
+#     else:
+#         print(Fore.RED + class_name + ' is not selected !!')
 
 end = time.time()
 print('Total elapsed time: ' + str(end - start))
