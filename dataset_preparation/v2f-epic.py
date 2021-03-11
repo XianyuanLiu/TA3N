@@ -23,7 +23,7 @@ init(autoreset=True)
 
 ###### Flags ######
 parser = argparse.ArgumentParser(description='Dataset Preparation')
-parser.add_argument('--data_path', type=str, required=False, default='I:/Datasets/EgoAction/ADL/frames_rgb_flow/', help='source path')
+parser.add_argument('--data_path', type=str, required=False, default='I:/Datasets/EgoAction/emp/', help='source path')
 parser.add_argument('--video_in', type=str, required=False, default='rgb', help='name of input video dataset')
 parser.add_argument('--feature_in', type=str, required=False, default='rgb-feature',
                     help='name of output frame dataset')
@@ -156,15 +156,16 @@ def extract_features(video_file):
     print(video_file)
     video_name = os.path.splitext(video_file)[0]
     if args.structure == 'tsn':  # create the video folder if the data structure is TSN
-        if not os.path.isdir(path_output + video_name + '/'):
-            os.makedirs(path_output + video_name + '/')
+        if not os.path.isdir(path_output + te + '/' + p + '/' + video_name + '/'):
 
-    num_exist_files = len(os.listdir(path_output + video_name + '/'))
+            os.makedirs(path_output + te + '/' + p + '/' + video_name + '/')
+
+    num_exist_files = len(os.listdir(path_output + te + '/' + p + '/' + video_name + '/'))
 
     frames_tensor = []
     # print(class_name)
     if args.input_type == 'video':
-        reader = imageio.get_reader(path_input + class_name + '/' + video_file)
+        reader = imageio.get_reader(path_input + te + '/' + p + '/' + video_file)
 
         # --- collect list of frame tensors
         try:
@@ -175,13 +176,13 @@ def extract_features(video_file):
         except RuntimeError:
             print(Back.RED + 'Could not read frame', id_frame + 1, 'from', video_file)
     elif args.input_type == 'frames':
-        list_frames = os.listdir(path_input + class_name + '/' + video_file)
+        list_frames = os.listdir(path_input + te + '/' + p + '/' + video_file)
         list_frames.sort()
 
         # --- collect list of frame tensors
         try:
             for t in range(len(list_frames)):
-                im = imageio.imread(path_input + class_name + '/' + video_file + '/' + list_frames[t])
+                im = imageio.imread(path_input + te + '/' + p + '/' + video_file + '/' + list_frames[t])
                 if np.sum(im.shape) != 0:
                     id_frame = t + 1
                     frames_tensor.append(im2tensor(im))  # include data pre-processing
@@ -216,9 +217,9 @@ def extract_features(video_file):
         id_frame = t + 1
         id_frame_name = str(id_frame).zfill(5)
         if args.structure == 'tsn':
-            filename = path_output + video_name + '/' + 'img_' + id_frame_name + feature_in_type
+            filename = path_output + te + '/' + p + '/' + video_name + '/' + 'img_' + id_frame_name + feature_in_type
         elif args.structure == 'imagenet':
-            filename = path_output + class_name + '/' + video_name + '_' + id_frame_name + feature_in_type
+            filename = path_output + te + '/' + p + '/' + video_name + '_' + id_frame_name + feature_in_type
         else:
             raise NameError(Back.RED + 'not valid data structure')
 
@@ -229,41 +230,46 @@ def extract_features(video_file):
 
 ################### Main Program ###################
 # parse the classes
-list_class = os.listdir(path_input)
-list_class.sort()
+list_te = os.listdir(path_input)
+list_te.sort()
 
 # for i in range(len(list_class)):
 # 	print(i, list_class[i])
 # exit()
 
-id_class_start = args.start_class - 1
-id_class_end = len(list_class) if args.end_class <= 0 else args.end_class
+id_te_start = args.start_class - 1
+id_te_end = len(list_te) if args.end_class <= 0 else args.end_class
 start = time.time()
 
-list_video = os.listdir(path_input + '/')
-list_video.sort()
-class_name = ''
-pool.map(extract_features, list_video, chunksize=1)
+# list_video = os.listdir(path_input + '/')
+# list_video.sort()
+# class_name = ''
+# pool.map(extract_features, list_video, chunksize=1)
 
-# for i in range(id_class_start, id_class_end):
-#     start_class = time.time()
-#     class_name = list_class[i]
-#     if class_name in class_names_proc:
-#         print(Fore.YELLOW + 'class ' + str(i + 1) + ': ' + class_name)
-#
-#         if args.structure == 'imagenet':  # create the class folder if the data structure is ImageNet
-#             if not os.path.isdir(path_output + class_name + '/'):
-#                 os.makedirs(path_output + class_name + '/')
-#
-#         list_video = os.listdir(path_input + class_name + '/')
-#         list_video.sort()
-#
-#         pool.map(extract_features, list_video, chunksize=1)
-#
-#         end_class = time.time()
-#         print('Elapsed time for ' + class_name + ': ' + str(end_class - start_class))
-#     else:
-#         print(Fore.RED + class_name + ' is not selected !!')
+for i in range(id_te_start, id_te_end):
+    start_class = time.time()
+    te = list_te[i]
+    list_p = os.listdir(path_input+te)
+    list_p.sort()
+
+    id_p_start = -1
+    id_p_end = len(list_p)
+
+    for j in range(id_p_start, id_p_end):
+        p = list_p[j]
+        print(Fore.YELLOW + 'class ' + str(i + 1) + ': ' + te)
+
+        if args.structure == 'imagenet':  # create the class folder if the data structure is ImageNet
+            if not os.path.isdir(path_output + te + p + '/'):
+                os.makedirs(path_output + te + p + '/')
+
+        list_video = os.listdir(path_input + te + '/' + p + '/')
+        list_video.sort()
+
+        pool.map(extract_features, list_video, chunksize=1)
+
+        end_class = time.time()
+        print('Elapsed time for ' + te + ': ' + str(end_class - start_class))
 
 end = time.time()
 print('Total elapsed time: ' + str(end - start))
