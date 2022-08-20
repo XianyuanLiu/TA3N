@@ -184,6 +184,7 @@ def extract_features(video_file):
         try:
             for t in range(len(list_frames)):
                 # im = imageio.imread(path_input + class_name + '/' + video_file + '/' + list_frames[t])
+                print(list_frames[t])
                 im = imageio.imread(path_input + class_name + '/' + list_frames[t])
                 if np.sum(im.shape) != 0:
                     id_frame = t + 1
@@ -218,7 +219,7 @@ def extract_features(video_file):
     for t in range(features.size(0)):
         id_frame = t + 1
         id_frame_name = str(id_frame).zfill(5)
-        print(id_frame_name)
+        # print(id_frame_name)
         if args.structure == 'tsn':
             # filename = path_output + video_name + '/' + 'img_' + id_frame_name + feature_in_type
             filename = path_output + class_name + '/' + 'img_' + id_frame_name + feature_in_type
