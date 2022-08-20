@@ -233,6 +233,26 @@ def extract_features(video_file):
         # if no clone(), the size of features[t] will be the same as features
 
 
+def extract_features_epic(frame_file):
+    frames_tensor = []
+    if args.input_type == 'frames':
+        im = imageio.imread(path_input + class_name + '/' + frame_file)
+        frames_tensor.append(im2tensor(im))
+
+    features = torch.Tensor()
+    features_batch = extract_frame_feature_batch(frames_tensor)
+    features = torch.cat((features, features_batch))
+
+    id_frame_name = str(frame_file[-9:-4]).zfill(5)
+    if args.structure == 'tsn':
+        filename = path_output + class_name + '/' + 'img_' + id_frame_name + feature_in_type
+
+    print(frame_file, id_frame_name)
+
+    if not os.path.exists(filename):
+        torch.save(features.clone(), filename)
+
+
 ################### Main Program ###################
 # parse the classes
 list_class = os.listdir(path_input)
@@ -252,15 +272,18 @@ for i in range(id_class_start, id_class_end):
     if class_name in class_names_proc:
         print(Fore.YELLOW + 'class ' + str(i + 1) + ': ' + class_name)
 
-        if args.structure == 'imagenet':  # create the class folder if the data structure is ImageNet
-            if not os.path.isdir(path_output + class_name + '/'):
-                os.makedirs(path_output + class_name + '/')
+        # if args.structure == 'imagenet':  # create the class folder if the data structure is ImageNet
+        #     if not os.path.isdir(path_output + class_name + '/'):
+        #         os.makedirs(path_output + class_name + '/')
+
+        if not os.path.isdir(path_output + class_name + '/'):
+            os.makedirs(path_output + class_name + '/')
 
         list_video = os.listdir(path_input + class_name + '/')
         # list_video = os.listdir(path_input + '/')
         list_video.sort()
 
-        pool.map(extract_features, '0', chunksize=1)
+        pool.map(extract_features_epic, list_video, chunksize=1)
 
         end_class = time.time()
         print('Elapsed time for ' + class_name + ': ' + str(end_class - start_class))
