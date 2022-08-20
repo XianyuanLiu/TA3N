@@ -243,7 +243,7 @@ def extract_features_epic(frame_file):
     features_batch = extract_frame_feature_batch(frames_tensor)
     features = torch.cat((features, features_batch))
 
-    id_frame_name = str(frame_file[-9:-4]).zfill(5)
+    id_frame_name = str(frame_file[-9:-4]).zfill(7)
     if args.structure == 'tsn':
         filename = path_output + class_name + '/' + 'img_' + id_frame_name + feature_in_type
 
